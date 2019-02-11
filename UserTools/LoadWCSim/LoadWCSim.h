@@ -16,6 +16,7 @@
 #include "Geometry.h"
 #include "MRDspecs.hh"
 #include "ChannelKey.h"
+#include "Detector.h"
 #include "BeamStatus.h"
 
 class LoadWCSim: public Tool {
@@ -40,7 +41,11 @@ private:
 	WCSimRootOptions* wcsimrootopts;
 	
 	long NumEvents;
-	
+
+	int numtankpmts;
+	int numlappds;
+	int nummrdpmts;
+
 	////////////////
 	// things that will be filled into the store from this WCSim file.
 	// note: filling everything in the right format is a complex process;
@@ -60,7 +65,12 @@ private:
 	std::map<ChannelKey,std::vector<Hit>>* MCHits;
 	std::vector<TriggerClass>* TriggerData;
 	BeamStatusClass* BeamStatus;
-	
+
+  std::map<unsigned long, Detector>* tanklappds;
+  std::map<unsigned long, Detector>* tankpmts;
+  std::map<unsigned long, Detector>* mrdpmts;
+  std::map<unsigned long, Detector>* vetopmts;
+
 	// currently used to separate Veto/MRD PMTs
 	int numvetopmts;
 
