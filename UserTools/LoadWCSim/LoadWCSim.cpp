@@ -116,48 +116,115 @@ bool LoadWCSim::Initialise(std::string configfile, DataModel &data){
 	if(verbose>1) cout<<"we have "<<numtankpmts<<" tank pmts, "<<nummrdpmts
 					  <<" mrd pmts and "<<numlappds<<" lappds"<<endl;
 
+  int totalDetectors = numtankpmts + numlappds + nummrdpmts;
+  int DetectorID = 0;  //Used to assign unique IDs to each detector
+  int ChannelID = 0;  //Used to assign unique IDs to each channel
 	// loop over PMTs and make the map of Detectors
+	std::vector<std::map<unsigned long,Detector>* > dets;
 	std::map<ChannelKey,Detector> Detectors;
-	map<unsigned long,Channel> channels;
 	// tank pmts
+  std::map<unsigned long, Detector>* tankpmts;
 	for(int i=0; i<numtankpmts; i++){
-		ChannelKey akey(subdetector::ADC, i);
+    //only one channel per PMT
+    std::map<unsigned long,Channel> tankpmtchannels;
+    Channel tankpmtchannel;
+    Position relPos(0.,0.,0.);
+    tankpmtchannel.SetChannelID(ChannelID);
+    ChannelID++;
+    tankpmtchannel.SetRelPos(relPos);
+    tankpmtchannel.SetCard(-1);
+    tankpmtchannel.SetCrate(-1);
+    tankpmtchannel.SetStripSide(-1);
+    tankpmtchannel.SetElecID(-1);
+    tankpmtchannel.SetStatus(0);
+    tankpmtchannels.emplace(0,tankpmtchannel);
+		ChannelKey akey(subdetector::ADC, DetectorID);
 		WCSimRootPMT apmt = wcsimrootgeom->GetPMT(i);
 		Detector adet("Tank", Position(apmt.GetPosition(0)/100.,apmt.GetPosition(1)/100.,apmt.GetPosition(2)/100.),
 		               Direction(apmt.GetOrientation(0),apmt.GetOrientation(1),apmt.GetOrientation(2)),
-		               i, apmt.GetName(), detectorstatus::ON, 0., channels);
+		               i, apmt.GetName(), detectorstatus::ON, 0., tankpmtchannels);
+    tankpmts->emplace(DetectorID, adet); 
+    DetectorID++;
 		Detectors.emplace(akey,adet);
 	}
-	// mrd pmts
-	for(int i=0; i<nummrdpmts; i++){
-		ChannelKey akey(subdetector::TDC, i);
-		WCSimRootPMT apmt = wcsimrootgeom->GetMRDPMT(i);
-		Detector adet("MRD", Position(apmt.GetPosition(0)/100.,apmt.GetPosition(1)/100.,apmt.GetPosition(2)/100.),
-		              Direction(apmt.GetOrientation(0),apmt.GetOrientation(1),apmt.GetOrientation(2)),
-		              i, apmt.GetName(), detectorstatus::ON, 0., channels);
-		Detectors.emplace(akey,adet);
-	}
-	// veto pmts
-	for(int i=0; i<numvetopmts; i++){
-		ChannelKey akey(subdetector::TDC, i);
-		WCSimRootPMT apmt = wcsimrootgeom->GetFACCPMT(i);
-		Detector adet("Veto", Position(apmt.GetPosition(0)/100.,apmt.GetPosition(1)/100.,apmt.GetPosition(2)/100.),
-		              Direction(apmt.GetOrientation(0),apmt.GetOrientation(1),apmt.GetOrientation(2)),
-		              i, apmt.GetName(), detectorstatus::ON, 0., channels);
-		Detectors.emplace(akey,adet);
-	}
+  dets.push_back(tankpmts);
 	// lappds
+  std::map<unsigned long, Detector>* tanklappds;
 	for(int i=0; i<numlappds; i++){
-		ChannelKey akey(subdetector::LAPPD, i);
+    int numlappdchannels = 60; //FIXME: Get number of channels per LAPPD from WCSim
+    std::map<unsigned long,Channel> lappdchannels;
+    for(int j=0; j<numlappdchannels; j++){
+      Channel lappdchannel;
+      Position relPos(0.,0.,0.);  //FIXME: Get relative position of each LAPPD channel in WCSim
+      lappdchannel.SetChannelID(ChannelID);
+      ChannelID++;
+      lappdchannel.SetRelPos(relPos);
+      lappdchannel.SetCard(-1);
+      lappdchannel.SetCrate(-1);
+      lappdchannel.SetStripSide(-1);
+      lappdchannel.SetElecID(-1);
+      lappdchannel.SetStatus(0);
+      lappdchannels.emplace(j,lappdchannel);
+    }
+		ChannelKey akey(subdetector::LAPPD, DetectorID);
 		WCSimRootPMT apmt = wcsimrootgeom->GetLAPPD(i);
 		Detector adet("Tank", Position(apmt.GetPosition(0)/100.,apmt.GetPosition(1)/100.,apmt.GetPosition(2)/100.),
 		              Direction(apmt.GetOrientation(0),apmt.GetOrientation(1),apmt.GetOrientation(2)),
-		              i, apmt.GetName(), detectorstatus::ON, 0., channels);
+		              i, apmt.GetName(), detectorstatus::ON, 0., lappdchannels);
+    tanklappds->emplace(DetectorID,adet);
+    DetectorID++;
+		Detectors.emplace(akey,adet);
+	}
+  dets.push_back(tanklappds);
+	// mrd pmts
+  std::map<unsigned long, Detector>* mrdpmts;
+	for(int i=0; i<nummrdpmts; i++){
+    std::map<unsigned long,Channel> mrdpmtchannels;
+    Channel mrdpmtchannel;
+    Position relPos(0.,0.,0.);
+    mrdpmtchannel.SetChannelID(ChannelID);
+    ChannelID++;
+    mrdpmtchannel.SetRelPos(relPos);
+    mrdpmtchannel.SetCard(-1);
+    mrdpmtchannel.SetCrate(-1);
+    mrdpmtchannel.SetStripSide(-1);
+    mrdpmtchannel.SetElecID(-1);
+    mrdpmtchannel.SetStatus(0);
+    mrdpmtchannels.emplace(0,mrdpmtchannel);
+		ChannelKey akey(subdetector::TDC, DetectorID);
+		WCSimRootPMT apmt = wcsimrootgeom->GetMRDPMT(i);
+		Detector adet("MRD", Position(apmt.GetPosition(0)/100.,apmt.GetPosition(1)/100.,apmt.GetPosition(2)/100.),
+		              Direction(apmt.GetOrientation(0),apmt.GetOrientation(1),apmt.GetOrientation(2)),
+		              i, apmt.GetName(), detectorstatus::ON, 0., mrdpmtchannels);
+    mrdpmts->emplace(DetectorID,adet);
+    DetectorID++;
+		Detectors.emplace(akey,adet);
+	}
+  dets.push_back(mrdpmts);
+	
+  // veto pmts (Currently not placing into Geometry)
+	for(int i=0; i<numvetopmts; i++){
+    std::map<unsigned long,Channel> vetopmtchannels;
+    Channel vetopmtchannel;
+    Position relPos(0.,0.,0.);
+    vetopmtchannel.SetChannelID(ChannelID);
+    ChannelID++;
+    vetopmtchannel.SetRelPos(relPos);
+    vetopmtchannel.SetCard(-1);
+    vetopmtchannel.SetCrate(-1);
+    vetopmtchannel.SetStripSide(-1);
+    vetopmtchannel.SetElecID(-1);
+    vetopmtchannel.SetStatus(0);
+    vetopmtchannels.emplace(0,vetopmtchannel);
+		ChannelKey akey(subdetector::TDC, DetectorID);
+		WCSimRootPMT apmt = wcsimrootgeom->GetFACCPMT(i);
+		Detector adet("Veto", Position(apmt.GetPosition(0)/100.,apmt.GetPosition(1)/100.,apmt.GetPosition(2)/100.),
+		              Direction(apmt.GetOrientation(0),apmt.GetOrientation(1),apmt.GetOrientation(2)),
+		              i, apmt.GetName(), detectorstatus::ON, 0., vetopmtchannels);
 		Detectors.emplace(akey,adet);
 	}
 
 	// construct the goemetry
-	std::vector<std::map<unsigned long,Detector>* > dets;
 	Geometry* anniegeom = new Geometry(dets, WCSimGeometryVer, tank_centre, tank_radius,
 	                           tank_halfheight, mrd_width, mrd_height, mrd_depth, mrd_start,
 
