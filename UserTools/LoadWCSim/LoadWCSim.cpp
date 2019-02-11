@@ -121,11 +121,9 @@ bool LoadWCSim::Initialise(std::string configfile, DataModel &data){
 	// loop over PMTs and make the map of Detectors
 	std::vector<std::map<unsigned long,Detector>* > dets;
 
-  std::cout << "INITIALIZING LAPPD DETECTOR MAP" << std::endl;  
 	// lappds
   tanklappds = new std::map<unsigned long, Detector>;
 	for(int i=0; i<numlappds; i++){
-    std::cout << "LOOPING THROUGH LAPPDS AND FILLING CHANNELS" << std::endl;
     int numlappdchannels = 60; //FIXME: Get number of channels per LAPPD from WCSim
     std::map<unsigned long,Channel> lappdchannels;
     for(unsigned long j=0; j<numlappdchannels; j++){
@@ -149,10 +147,8 @@ bool LoadWCSim::Initialise(std::string configfile, DataModel &data){
     tanklappds->emplace(DetectorID,adet);
     DetectorID++;
 	}
-  std::cout << "PUSHING DETECTOR MAP OF LAPPDS INTO DETECTOR VECTOR" << std::endl;
   dets.push_back(tanklappds);
   
-  std::cout << "INITIALIZING TANK PMT DETECTOR MAP" << std::endl;
   // tank pmts
   tankpmts = new std::map<unsigned long, Detector>;
 	for(int i=0; i<numtankpmts; i++){
@@ -501,6 +497,10 @@ bool LoadWCSim::Execute(){
 bool LoadWCSim::Finalise(){
 	file->Close();
 	delete WCSimEntry;
+  delete tankpmts;
+  delete mrdpmts;
+  delete tanklappds;
+  delete vetopmts;
 	//delete file;  // Done by WCSimEntry destructor
 
 	return true;
