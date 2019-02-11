@@ -151,8 +151,10 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 			// a 'subdetector' (enum class), with types ADC, LAPPD, TDC
 			// and a DetectorElementIndex, i.e. the ID of the detector of that type
 			// get PMT position
-			int PMTId = chankey.GetDetectorElementIndex();
+			unsigned long PMTId = chankey.GetDetectorElementIndex();
+      std::cout << "ATTEMPTING TO GET DETECTOR OF ID" << PMTId << std::endl;
       det = fGeometry.GetDetector(PMTId);
+      Log(det->Print(), v_debug, verbosity);
 			if(det->GetDetectorElement() == "") {
 				Log("DigitBuilder Tool: Detector not found! ",v_message,verbosity);
 				continue;
@@ -175,7 +177,7 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 					calT = ahit.GetTime()*1.0; // remove 950 ns offs
 					calQ = ahit.GetCharge();
 					digitType = RecoDigit::PMT8inch;
-					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType, PMTId);
+					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType, (int)PMTId);
 				  //recoDigit.Print();
 				  fDigitList->push_back(recoDigit); 
         }
@@ -195,7 +197,6 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 	double calT = 0;
 	double calQ = 0;
 	int digitType = -999;
-  int LAPPDId = -1;
 	Detector* det;
 	Position  pos_sim, pos_reco;
   // repeat for LAPPD hits
@@ -205,9 +206,8 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 		// iterate over the map of sensors with a measurement
 		for(std::pair<ChannelKey,std::vector<LAPPDHit>>&& apair : *fMCLAPPDHits){
 			ChannelKey chankey = apair.first;
-			det = fGeometry.GetDetector(chankey.GetDetectorElementIndex());
-			//Tube ID is different from that in ANNIEReco
-			LAPPDId = chankey.GetDetectorElementIndex();
+      unsigned long LAPPDId = chankey.GetDetectorElementIndex();
+			det = fGeometry.GetDetector(LAPPDId);
 			//if(LAPPDId != 266 && LAPPDId != 271 && LAPPDId != 236 && LAPPDId != 231 && LAPPDId != 206) continue;
 			//if(LAPPDId != 90 && LAPPDId != 83 && LAPPDId != 56 && LAPPDId != 59 && LAPPDId != 22) continue;
                         if(chankey.GetSubDetectorType()==subdetector::LAPPD){ // redundant
@@ -228,7 +228,7 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 					// here I just set the charge to 1. We should come back to this later. (Jingbo Wang)
 					calQ = 1.;
 					digitType = RecoDigit::lappd_v0;
-					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType,LAPPDId);
+					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType,(int)LAPPDId);
 					//if(v_message<verbosity) recoDigit.Print();
 				  fDigitList->push_back(recoDigit);
 				}
