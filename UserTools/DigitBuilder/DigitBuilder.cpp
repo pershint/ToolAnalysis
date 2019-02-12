@@ -152,9 +152,7 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 			// and a DetectorElementIndex, i.e. the ID of the detector of that type
 			// get PMT position
 			unsigned long PMTId = chankey.GetDetectorElementIndex();
-      std::cout << "ATTEMPTING TO GET DETECTOR OF ID" << PMTId << std::endl;
       det = fGeometry.GetDetector(PMTId);
-      Log(det->Print(), v_debug, verbosity);
 			if(det->GetDetectorElement() == "") {
 				Log("DigitBuilder Tool: Detector not found! ",v_message,verbosity);
 				continue;
