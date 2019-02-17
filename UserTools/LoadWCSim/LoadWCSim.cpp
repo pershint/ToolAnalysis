@@ -543,7 +543,7 @@ void LoadWCSim::ConstructToolChainGeometry(){
 		// construct the channel associated with this PMT
 		unsigned long uniquechannelkey = anniegeom->ConsumeNextFreeChannelKey();
 		pmt_tubeid_to_channelkey.emplace(apmt.GetTubeNo(), uniquechannelkey);
-		channelkey_to_pmtdit.emplace(uniquechannelkey,apmt.GetTubeNo());
+		channelkey_to_pmtid.emplace(uniquechannelkey,apmt.GetTubeNo());
 		
 		// fill up ADC cards and channels monotonically, they're arbitrary for simulation
 		ADC_Chan_Num++;
@@ -695,6 +695,9 @@ void LoadWCSim::ConstructToolChainGeometry(){
 		if(verbose>4) anniegeom->PrintChannels();
 	}
 	
+  // Initialize the channel map
+  anniegeom->InitChannelMap();
+
 	// for other WCSim tools that may need the WCSim Tube IDs
 	m_data->CStore.Set("lappd_tubeid_to_detectorkey",lappd_tubeid_to_detectorkey);
 	m_data->CStore.Set("pmt_tubeid_to_channelkey",pmt_tubeid_to_channelkey);
@@ -702,7 +705,7 @@ void LoadWCSim::ConstructToolChainGeometry(){
 	m_data->CStore.Set("facc_tubeid_to_channelkey",facc_tubeid_to_channelkey);
 	// inverse
 	m_data->CStore.Set("detectorkey_to_lappdid",detectorkey_to_lappdid);
-	m_data->CStore.Set("channelkey_to_pmtdit",channelkey_to_pmtdit);
+	m_data->CStore.Set("channelkey_to_pmtid",channelkey_to_pmtid);
 	m_data->CStore.Set("channelkey_to_mrdpmtid",channelkey_to_mrdpmtid);
 	m_data->CStore.Set("channelkey_to_faccpmtid",channelkey_to_faccpmtid);
 	
