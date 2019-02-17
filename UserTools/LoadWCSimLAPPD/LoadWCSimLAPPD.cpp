@@ -102,8 +102,6 @@ bool LoadWCSimLAPPD::Initialise(std::string configfile, DataModel &data){
 		digits = new TH1D("digits","digits",100,-50,100);
 	}
 	
-	anniegeom->InitChannelMap();
-	
 	return true;
 }
 
