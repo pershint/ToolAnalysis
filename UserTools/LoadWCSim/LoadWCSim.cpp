@@ -695,9 +695,8 @@ void LoadWCSim::ConstructToolChainGeometry(){
 		if(verbose>4) anniegeom->PrintChannels();
 	}
 	
-  // Initialize the channel map
-  anniegeom->InitChannelMap();
-
+	// Initialize the channel map
+	anniegeom->InitChannelMap();
 	// for other WCSim tools that may need the WCSim Tube IDs
 	m_data->CStore.Set("lappd_tubeid_to_detectorkey",lappd_tubeid_to_detectorkey);
 	m_data->CStore.Set("pmt_tubeid_to_channelkey",pmt_tubeid_to_channelkey);

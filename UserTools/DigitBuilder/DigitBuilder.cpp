@@ -159,7 +159,7 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 			unsigned long chankey = apair.first;
 			// the channel key is a unique identifier of this signal input channel
 			det = fGeometry->ChannelToDetector(chankey);
-      int PMTId = channelkey_to_pmtid.at(chankey);  //PMTID In WCSim
+			int PMTId = channelkey_to_pmtid.at(chankey);  //PMTID In WCSim
 			if(det==nullptr){
 				Log("DigitBuilder Tool: Detector not found! ",v_message,verbosity);
 				continue;
@@ -247,7 +247,7 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 			// but I recommend transitioning to a more robust method
 			//if(LAPPDId != 266 && LAPPDId != 271 && LAPPDId != 236 && LAPPDId != 231 && LAPPDId != 206) continue;
 			//if(LAPPDId != 90 && LAPPDId != 83 && LAPPDId != 56 && LAPPDId != 59 && LAPPDId != 22) continue;
-      if(det->GetDetectorElement()=="LAPPD"){ // redundant, MCLAPPDHits are LAPPD hitss
+			if(det->GetDetectorElement()=="LAPPD"){ // redundant, MCLAPPDHits are LAPPD hitss
 				std::vector<LAPPDHit>& hits = apair.second;
 				for(LAPPDHit& ahit : hits){
 					//if(v_message<verbosity) ahit.Print(); // << VERY verbose
