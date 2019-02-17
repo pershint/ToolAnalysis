@@ -23,11 +23,14 @@ bool DigitBuilder::Initialise(std::string configfile, DataModel &data){
   //m_variables.Print();
 
   m_data= &data; //assigning transient data pointer
-  /////////////////////////////////////////////////////////////////
-  fPhotodetectorConfiguration = "All";
   
+  ///////////////////// Defaults for Config ///////////////
+  fPhotodetectorConfiguration = "All";
+  fParametricModel = 0;
+
   /// Get the Tool configuration variables
 	m_variables.Get("verbosity",verbosity);
+	m_variables.Get("ParametricModel", fParametricModel);
 	m_variables.Get("PhotoDetectorConfiguration", fPhotodetectorConfiguration);
 	
 	/// Construct the other objects we'll be setting at event level,
@@ -41,6 +44,7 @@ bool DigitBuilder::Initialise(std::string configfile, DataModel &data){
   // I would recommend moving away from the use of WCSim IDs if possible as they are liable to change
   // but for tools that need them, in the LoadWCSim tool I put a map of WCSim TubeId to channelkey
   m_data->CStore.Get("detectorkey_to_lappdid",detectorkey_to_lappdid);
+  m_data->CStore.Get("channelkey_to_pmtid",channelkey_to_pmtid);
   
   return true;
 }
@@ -154,7 +158,8 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 		for(std::pair<unsigned long,std::vector<Hit>>&& apair : *fMCHits){
 			unsigned long chankey = apair.first;
 			// the channel key is a unique identifier of this signal input channel
-			det = fGeometry.ChannelToDetector(chankey);
+			det = fGeometry->ChannelToDetector(chankey);
+			int PMTId = channelkey_to_pmtid.at(chankey);  //PMTID In WCSim
 			if(det==nullptr){
 				Log("DigitBuilder Tool: Detector not found! ",v_message,verbosity);
 				continue;
@@ -170,18 +175,42 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 	
 			if(det->GetDetectorElement()=="Tank"){
 				std::vector<Hit>& hits = apair.second;
-			  for(Hit& ahit : hits){
-			  	//ahit.Print();
-					//if(v_message<verbosity) ahit.Print(); // << VERY verbose
-					// get calibrated PMT time (Use the MC time for now)
-					calT = ahit.GetTime()*1.0; // remove 950 ns offs
-					calQ = ahit.GetCharge();
-					digitType = RecoDigit::PMT8inch;
-					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType, (int)chankey);
-				  //recoDigit.Print();
+        if(fParametricModel){
+          //We'll get all hit info and then define a time/charge for each digit
+          std::vector<double> hitTimes;
+          std::vector<double> hitCharges;
+          for(Hit& ahit : hits){
+					  hitTimes.push_back(ahit.GetTime()*1.0); 
+            hitCharges.push_back(ahit.GetCharge());
+          }
+          // Do median and sum
+          std::sort(hitTimes.begin(), hitTimes.end());
+          size_t timesize = hitTimes.size();
+          if (timesize % 2 == 0){
+            calT = (hitTimes.at(timesize/2 - 1) + hitTimes.at(timesize/2))/2;
+          } else {
+            calT = hitTimes.at(timesize/2);
+          }
+          calQ = 0.;
+          for(std::vector<double>::iterator it = hitCharges.begin(); it != hitCharges.end(); ++it){
+            calQ += *it;
+          }
+				  digitType = RecoDigit::PMT8inch;
+				  RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType, PMTId);
 				  fDigitList->push_back(recoDigit); 
-        }
-			}
+        } else {
+			    for(Hit& ahit : hits){
+				  	//if(v_message<verbosity) ahit.Print(); // << VERY verbose
+				  	// get calibrated PMT time (Use the MC time for now)
+				  	calT = ahit.GetTime()*1.0; 
+            calQ = ahit.GetCharge();
+				  	digitType = RecoDigit::PMT8inch;
+				  	RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType, PMTId);
+				    //recoDigit.Print();
+				    fDigitList->push_back(recoDigit); 
+          }
+			  }
+      }
 		} // end loop over MCHits
 	} else {
 		cout<<"No MCHits"<<endl;
@@ -206,7 +235,11 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 		// iterate over the map of sensors with a measurement
 		for(std::pair<unsigned long,std::vector<LAPPDHit>>&& apair : *fMCLAPPDHits){
 			unsigned long chankey = apair.first;
-			det = fGeometry.ChannelToDetector(chankey);
+			det = fGeometry->ChannelToDetector(chankey);
+			if(det==nullptr){
+				Log("DigitBuilder Tool: LAPPD Detector not found! ",v_message,verbosity);
+				continue;
+			}
 			int detkey = det->GetDetectorID();
 			int LAPPDId = detectorkey_to_lappdid.at(detkey); // WCSim's LAPPDID
 			// XXX ^ this is here for demonstration, since it will tie up with
@@ -214,7 +247,7 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 			// but I recommend transitioning to a more robust method
 			//if(LAPPDId != 266 && LAPPDId != 271 && LAPPDId != 236 && LAPPDId != 231 && LAPPDId != 206) continue;
 			//if(LAPPDId != 90 && LAPPDId != 83 && LAPPDId != 56 && LAPPDId != 59 && LAPPDId != 22) continue;
-                        if(det->GetDetectorElement()=="LAPPD"){ // redundant, MCLAPPDHits are LAPPD hitss
+			if(det->GetDetectorElement()=="LAPPD"){ // redundant, MCLAPPDHits are LAPPD hitss
 				std::vector<LAPPDHit>& hits = apair.second;
 				for(LAPPDHit& ahit : hits){
 					//if(v_message<verbosity) ahit.Print(); // << VERY verbose
@@ -232,7 +265,7 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 					// here I just set the charge to 1. We should come back to this later. (Jingbo Wang)
 					calQ = 1.;
 					digitType = RecoDigit::lappd_v0;
-					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType,(int)chankey);
+					RecoDigit recoDigit(region, pos_reco, calT, calQ, digitType,LAPPDId);
 					//if(v_message<verbosity) recoDigit.Print();
 				  fDigitList->push_back(recoDigit);
 				}
