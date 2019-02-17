@@ -154,7 +154,7 @@ bool DigitBuilder::BuildPMTRecoDigit() {
 		for(std::pair<unsigned long,std::vector<Hit>>&& apair : *fMCHits){
 			unsigned long chankey = apair.first;
 			// the channel key is a unique identifier of this signal input channel
-			det = fGeometry.GetDetector(chankey);
+			det = fGeometry.ChannelToDetector(chankey);
 			if(det==nullptr){
 				Log("DigitBuilder Tool: Detector not found! ",v_message,verbosity);
 				continue;
@@ -206,7 +206,7 @@ bool DigitBuilder::BuildLAPPDRecoDigit() {
 		// iterate over the map of sensors with a measurement
 		for(std::pair<unsigned long,std::vector<LAPPDHit>>&& apair : *fMCLAPPDHits){
 			unsigned long chankey = apair.first;
-			det = fGeometry.GetDetector(chankey);
+			det = fGeometry.ChannelToDetector(chankey);
 			int detkey = det->GetDetectorID();
 			int LAPPDId = detectorkey_to_lappdid.at(detkey); // WCSim's LAPPDID
 			// XXX ^ this is here for demonstration, since it will tie up with

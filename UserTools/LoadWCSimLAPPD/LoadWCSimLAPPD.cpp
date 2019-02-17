@@ -102,6 +102,8 @@ bool LoadWCSimLAPPD::Initialise(std::string configfile, DataModel &data){
 		digits = new TH1D("digits","digits",100,-50,100);
 	}
 	
+	anniegeom->InitChannelMap();
+	
 	return true;
 }
 
@@ -171,7 +173,7 @@ bool LoadWCSimLAPPD::Execute(){
 			// convert LAPPDID to channelkey
 			unsigned int detkey = lappd_tubeid_to_detectorkey.at(LAPPDID);
 			Detector* thedet = anniegeom->GetDetector(detkey);
-			unsigned int key = thedet->GetChannels().begin()->first; // first strip on this LAPPD
+			unsigned int key = thedet->GetChannels()->begin()->first; // first strip on this LAPPD
 			double pmtx = (LAPPDEntry->lappdhit_x[lappdi]) / 1000.;  // pos of LAPPD in global coords, [mm] to [m]
 			double pmty = (LAPPDEntry->lappdhit_y[lappdi]) / 1000.;
 			double pmtz = (LAPPDEntry->lappdhit_z[lappdi]) / 1000.;
