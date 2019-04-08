@@ -28,14 +28,14 @@ class VtxGridFitter: public Tool {
 
   /// Function that generates an array of directions approximately
   /// evenly distributed in all directions from the origin.  This is
-  /// done by populating a unit sphere using Vogel's method.
+  /// done by populating a unit sphere using the Fibbonacci shpere algorithm.
   /// source: https://stackoverflow.com/questions/9600801/evenly-
   /// distributing-n-points-on-a-sphere
-  void GenerateDirectionSeeds(int numDirs);
-  
+  void GenerateRoughDirectionSeeds(int numDirs, Direction seedDir);
+  void GenerateFineDirectionSeeds(int numDirs);
   /// Generate a list of time seeds to fit to in a time range defined
-  double MinimumTime=-10.;
-  double MaximumTime=40.;
+  double MinimumTime=-5.;
+  double MaximumTime=20.;
   double TimeResolution=0.25;
   void GenerateRoughTimeSeeds();
 
@@ -48,15 +48,19 @@ class VtxGridFitter: public Tool {
 
   /// Given a RecoVertex with position parameters, return the direction
   /// and time with the highest FOM
-  RecoVertex* FindBestVtxAtPos(RecoVertex* SeedPosition, std::vector<double> timeList,
-          double coneweight, double vtxweight);
+  RecoVertex* FindBestVtxAtPos(RecoVertex* SeedPosition, std::vector<double>* timeList,
+          std::vector<Direction>* dirList, double coneweight, double vtxweight);
 
   void PushExtendedVertex(RecoVertex* vtx, bool savetodisk);
 
  private:
   TRandom3 frand;  ///< Random number generator
   int NumDirSeeds;
-
+  double coneweight;
+  double vtxweight;
+  int numFineSeeds; 
+  double FineScaleReduction;
+  
   RecoVertex* BestExtendedVertex = nullptr;
   RecoVertex* scaledSeedPos = nullptr;
 
