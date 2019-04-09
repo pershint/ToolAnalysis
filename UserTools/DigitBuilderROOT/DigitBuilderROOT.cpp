@@ -106,7 +106,11 @@ bool DigitBuilderROOT::Execute(){
   m_data->Stores.at("ANNIEEvent")->Set("EventNumber",fEventNumber);
   
   fEventCutStatus = true; //FIXME: Need to read EventCutStatus into PhaseIITreeMaker
+  int fEventApplied = 0;
+  int fEventFlagged = 0;
   m_data->Stores.at("RecoEvent")->Set("EventCutStatus", fEventCutStatus);
+  m_data->Stores.at("RecoEvent")->Set("EventFlagApplied", fEventApplied);
+  m_data->Stores.at("RecoEvent")->Set("EventFlagged", fEventFlagged);
   return true;
 }
 

@@ -33,7 +33,9 @@ bool VtxGridFitter::Initialise(std::string configfile, DataModel &data){
 
 
 bool VtxGridFitter::Execute(){
-
+  
+  //this->Reset();
+  
   // check if event passes the cut
   bool EventCutstatus = false;
   auto get_evtstatus = m_data->Stores.at("RecoEvent")->Get("EventCutStatus",EventCutstatus);
@@ -120,7 +122,6 @@ bool VtxGridFitter::Execute(){
   }
   // Push highest FOM vertexPass2 into the BoostStore
   this->PushExtendedVertex(BestExtendedVertexPass2,true);
-  this->Reset();
 
   return true;
 }
