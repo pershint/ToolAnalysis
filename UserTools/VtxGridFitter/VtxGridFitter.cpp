@@ -76,7 +76,7 @@ bool VtxGridFitter::Execute(){
   Log("VtxGridFitter Tool: Second pass of grid fitting...",v_message,verbosity); 
   this->GenerateFineTimeSeeds(BestVtxCandidate->GetTime(), TimeResolution,
           numFineSeeds);
-  this->GenerateFineDirectionSeeds(NumDirSeeds);
+  this->GenerateFineDirectionSeeds(NumDirSeeds, BestExtendedVertex->GetDirection());
   // Re-run grid search with position grid shrunk and centered about the
   // Best fit position from the first pass
   for(int i=0;i<vSeedVtxList->size();i++){
@@ -84,7 +84,7 @@ bool VtxGridFitter::Execute(){
     scaledSeedPos = this->TransformPosition(thisSeedPos,FineScaleReduction,
             BestVtxCandidate->GetPosition());
     RecoVertex* BestVtxCandidate = this->FindBestVtxAtPos(scaledSeedPos,
-            &vSeedFTimeList, coneweight, vtxweight);
+            &vSeedFTimeList, &vSeedFineDirList, coneweight, vtxweight);
     if(BestVtxCandidate->GetFOM() > bestFOM) BestExtendedVertex = BestVtxCandidate;
   }
   
@@ -129,7 +129,7 @@ void VtxGridFitter::GenerateFineTimeSeeds(double mean, double timeres, int numFi
   }
 }
 
-void VtxGridFitter::GenerateRoughDirectionSeeds(int numDirs, Direction seedDir){
+void VtxGridFitter::GenerateRoughDirectionSeeds(int numDirs){
   numDirs=numDirs*2;
   vSeedRoughDirList.clear();
   double offset = 2./numDirs;
@@ -147,23 +147,30 @@ void VtxGridFitter::GenerateRoughDirectionSeeds(int numDirs, Direction seedDir){
   };
 }
 
-void VtxGridFitter::GenerateFineDirectionSeeds(int numDirs){
-  double timeStep = frand.Gaus(mean, timeres); // time is smeared with 100 ps time resolution. Harded-coded for now.
-  vSeedRoughDirList.clear();
-  double offset = 2./numDirs;
-  double increment = TMath::Pi()*(3. - sqrt(5.));
+void VtxGridFitter::GenerateFineDirectionSeeds(int numDirs,Direction seedDir){
+  vSeedFineDirList.clear();
+  logmessage = " Direction from first pass is: " + std::to_string(seedDir.X()) +
+      ","+std::to_string(seedDir.Y())+","+std::to_string(seedDir.Z());
+  Log(logmessage,v_debug,verbosity); 
+  //Generate the matrix that rotates our smears to the seedDir reference frame
+  TVector3 seedDirT3(seedDir.X(), seedDir.Y(), seedDir.Z());
+  TVector3 local(0.,0.,1.);
+  TMatrixD seedRotator = this->Rotateatob(local,seedDirT3);
   for(int i=0;i<numDirs;i++){
     //First, random sample a phi angle
-    double phi = 2.*TMath::Pi()*gRandom->Unform();
+    double phi = 2.*TMath::Pi()*gRandom->Uniform();
 	  //Sample a radius, assuming a standard deviation with
     //the radius given by the approx. surface area covered by each direction vector
-    double coneradius = TMath::atan(2*TMath::Pi()/numDirs);
+    double coneradius = atan(2*TMath::Pi()/numDirs);
     double r = abs(frand.Gaus(0,coneradius));
-    x = r*cos(phi);
-    y = r*sin(phi);
-    z = sqrt(1 - pow(x,2) - pow(y,2));
-    Direction thisDir(x,y,z);
-    vSeedFineDirList.push_back(thisDir);
+    double x = r*cos(phi);
+    double y = r*sin(phi);
+    double z = sqrt(1 - pow(x,2) - pow(y,2));
+    TVector3 seedSmear(x,y,z);
+    seedSmear = seedSmear.Unit();
+    TVector3 seedSmearT3 = seedRotator*seedSmear;
+    Direction smearedSeedDir(seedSmearT3.X(), seedSmearT3.Y(), seedSmearT3.Z());
+    vSeedFineDirList.push_back(smearedSeedDir);
   };
 }
 
@@ -239,3 +246,27 @@ RecoVertex* VtxGridFitter::FindBestVtxAtPos(RecoVertex* fSeedVertex,
   BestVertex->SetFOM(bestCombFOM,1,1);
   return BestVertex;
 }
+
+TMatrixD VtxGridFitter::Rotateatob(TVector3 a, TVector3 b){
+  //Get rotation matrix that rotates the z-axis of one coordinate system
+  // to vector b.
+  //b must be normalized.
+  TVector3 au = a.Unit();
+  TVector3 bu = b.Unit();
+  TVector3 c = au.Cross(bu);
+  TVector3 cu = c.Unit();
+  double cosa = au.Dot(bu);
+  double s = sqrt(1- (cosa*cosa));
+  double C = 1-cosa;
+  TMatrixD rotn(3,3);
+  rotn[0][0]= (cu.X()*cu.X()*C + cosa);
+  rotn[0][1]= (cu.X()*cu.Y()*C)-(cu.Z()*s);
+  rotn[0][2]= (cu.X()*cu.Z()*C)+(cu.Y()*s);
+  rotn[1][0]= (cu.Y()*cu.X()*C)+(cu.Z()*s);
+  rotn[1][1]= (cu.Y()*cu.Y()*C)+cosa;
+  rotn[1][2]= (cu.Y()*cu.Z()*C)-(cu.X()*s);
+  rotn[2][0]= (cu.Z()*cu.X()*C)-(cu.Y()*s);
+  rotn[2][1]= (cu.Z()*cu.Y()*C)+(cu.X()*s);
+  rotn[2][2]= (cu.Z()*cu.Z()*C)+cosa;
+  return rotn;
+} 

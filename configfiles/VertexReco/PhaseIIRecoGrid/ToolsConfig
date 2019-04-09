@@ -1,0 +1,4 @@
+DigitBuilderROOT DigitBuilderROOT ./configfiles/VertexReco/PhaseIIRecoGrid/DigitBuilderROOTConfig
+VtxSeedGenerator VtxSeedGenerator ./configfiles/VertexReco/PhaseIIRecoGrid/VtxSeedGeneratorConfig
+VtxGridFitter VtxGridFitter ./configfiles/VertexReco/PhaseIIRecoGrid/VtxGridFitterConfig
+PhaseIITreeMaker PhaseIITreeMaker ./configfiles/VertexReco/PhaseIIRecoGrid/PhaseIITreeMakerConfig

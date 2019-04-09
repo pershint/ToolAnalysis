@@ -1,0 +1,11 @@
+#Some stuff here
+#
+verbosity 3
+NumberDirSeeds 50
+ConeFitWeight 1.0
+ExtResidualWeight 1.0
+NumFineTimeSeeds 100
+FineScalePosReduction 0.1
+FirstPassMinimumTime -5
+FirstPassMaximumTime 20
+FirstPassTimeResolution 0.5

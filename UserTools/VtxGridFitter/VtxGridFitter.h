@@ -31,8 +31,8 @@ class VtxGridFitter: public Tool {
   /// done by populating a unit sphere using the Fibbonacci shpere algorithm.
   /// source: https://stackoverflow.com/questions/9600801/evenly-
   /// distributing-n-points-on-a-sphere
-  void GenerateRoughDirectionSeeds(int numDirs, Direction seedDir);
-  void GenerateFineDirectionSeeds(int numDirs);
+  void GenerateRoughDirectionSeeds(int numDirs);
+  void GenerateFineDirectionSeeds(int numDirs, Direction seedDir);
   /// Generate a list of time seeds to fit to in a time range defined
   double MinimumTime=-5.;
   double MaximumTime=20.;
@@ -45,7 +45,10 @@ class VtxGridFitter: public Tool {
 
   /// Scales and translates the input vertex position with the provided parameters
   RecoVertex* TransformPosition(RecoVertex* InputVertex, double scale, Position translation);
-
+  /// Generates a matrix that rotates vectors in refrence frame of vector a, to
+  /// that of vector b.
+  TMatrixD Rotateatob(TVector3 a, TVector3 b);
+  
   /// Given a RecoVertex with position parameters, return the direction
   /// and time with the highest FOM
   RecoVertex* FindBestVtxAtPos(RecoVertex* SeedPosition, std::vector<double>* timeList,
@@ -70,7 +73,8 @@ class VtxGridFitter: public Tool {
   std::vector<RecoDigit>* fDigitList = 0;
   std::vector<double> vSeedRTimeList;
   std::vector<double> vSeedFTimeList;
-  std::vector<Direction> vSeedDirList;
+  std::vector<Direction> vSeedRoughDirList;
+  std::vector<Direction> vSeedFineDirList;
   std::vector<RecoVertex>* vSeedVtxList = nullptr;
 
   /// verbosity levels: if 'verbosity' < this level, the message type will be logged.
