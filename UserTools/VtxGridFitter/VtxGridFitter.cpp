@@ -80,33 +80,46 @@ bool VtxGridFitter::Execute(){
   for(int i=0;i<vSeedVtxList->size();i++){
     BestVtxCandidate = this->FindBestVtxAtPos(&(vSeedVtxList->at(i)),
             &vSeedRTimeList, &vSeedRoughDirList, coneweight, vtxweight);
-    if(BestVtxCandidate->GetFOM() > bestFOM) BestExtendedVertex = BestVtxCandidate;
+    if(BestVtxCandidate->GetFOM() > bestFOM){
+      bestFOM = BestVtxCandidate->GetFOM();
+      BestExtendedVertexPass1 = BestVtxCandidate;
+    }
+  }
+  
+  if(verbosity >0) {
+  std::cout << "  First pass, extended vertex: " << std::endl
+  	        << "  status = "<<BestExtendedVertexPass1->GetStatus()<<std::endl
+            << "     (vx,vy,vz)=(" << BestExtendedVertexPass1->GetPosition().X() << "," << BestExtendedVertexPass1->GetPosition().Y() << "," << BestExtendedVertexPass1->GetPosition().Z() << ") " << std::endl
+            << "     vtime=" << BestExtendedVertexPass1->GetTime() << " itr=" << BestExtendedVertexPass1->GetIterations() << " fom=" << BestExtendedVertexPass1->GetFOM() << std::endl;
   }
 
   // **** BEGIN SECOND FINE PASS OF REDUCED TANK GRID *****
   // Generate the fine time seeds
   Log("VtxGridFitter Tool: Second pass of grid fitting...",v_message,verbosity); 
-  this->GenerateFineTimeSeeds(BestVtxCandidate->GetTime(), TimeResolution,
+  this->GenerateFineTimeSeeds(BestExtendedVertexPass1->GetTime(), TimeResolution,
           numFineSeeds);
-  this->GenerateFineDirectionSeeds(NumDirSeeds, BestExtendedVertex->GetDirection());
+  this->GenerateFineDirectionSeeds(NumDirSeeds, BestExtendedVertexPass1->GetDirection());
   // Re-run grid search with position grid shrunk and centered about the
   // Best fit position from the first pass
   for(int i=0;i<vSeedVtxList->size();i++){
     RecoVertex* thisSeedPos = &(vSeedVtxList->at(i));
     scaledSeedPos = this->TransformPosition(thisSeedPos,FineScaleReduction,
-            BestVtxCandidate->GetPosition());
+            BestExtendedVertexPass1->GetPosition());
     RecoVertex* BestVtxCandidate = this->FindBestVtxAtPos(scaledSeedPos,
             &vSeedFTimeList, &vSeedFineDirList, coneweight, vtxweight);
-    if(BestVtxCandidate->GetFOM() > bestFOM) BestExtendedVertex = BestVtxCandidate;
+    if(BestVtxCandidate->GetFOM() > bestFOM){
+      bestFOM = BestVtxCandidate->GetFOM();
+      BestExtendedVertexPass2 = BestVtxCandidate;
+    }
   }
   if(verbosity >0) {
-  std::cout << "  set extended vertex: " << std::endl
-  	        << "  status = "<<BestExtendedVertex->GetStatus()<<std::endl
-            << "     (vx,vy,vz)=(" << BestExtendedVertex->GetPosition().X() << "," << BestExtendedVertex->GetPosition().Y() << "," << BestExtendedVertex->GetPosition().Z() << ") " << std::endl
-            << "     vtime=" << BestExtendedVertex->GetTime() << " itr=" << BestExtendedVertex->GetIterations() << " fom=" << BestExtendedVertex->GetFOM() << std::endl;
+  std::cout << "  Second pass, extended vertex: " << std::endl
+  	        << "  status = "<<BestExtendedVertexPass2->GetStatus()<<std::endl
+            << "     (vx,vy,vz)=(" << BestExtendedVertexPass2->GetPosition().X() << "," << BestExtendedVertexPass2->GetPosition().Y() << "," << BestExtendedVertexPass2->GetPosition().Z() << ") " << std::endl
+            << "     vtime=" << BestExtendedVertexPass2->GetTime() << " itr=" << BestExtendedVertexPass2->GetIterations() << " fom=" << BestExtendedVertexPass2->GetFOM() << std::endl;
   }
-  // Push highest FOM vertex into the BoostStore
-  this->PushExtendedVertex(BestExtendedVertex,true);
+  // Push highest FOM vertexPass2 into the BoostStore
+  this->PushExtendedVertex(BestExtendedVertexPass2,true);
   this->Reset();
 
   return true;
@@ -115,13 +128,15 @@ bool VtxGridFitter::Execute(){
 
 bool VtxGridFitter::Finalise(){
   delete scaledSeedPos;
-  delete BestExtendedVertex;
+  delete BestExtendedVertexPass1;
+  delete BestExtendedVertexPass2;
   return true;
 }
 
 void VtxGridFitter::Reset(){
   scaledSeedPos->Reset();
-  BestExtendedVertex->Reset();
+  BestExtendedVertexPass1->Reset();
+  BestExtendedVertexPass2->Reset();
 }
 
 // Add extended vertex to RecoEvent store
@@ -256,11 +271,17 @@ RecoVertex* VtxGridFitter::FindBestVtxAtPos(RecoVertex* fSeedVertex,
   logmessage = " BestCombinedFOM is: " + std::to_string(bestCombFOM);
   Log(logmessage,v_debug,verbosity); 
   logmessage = " BestFittedTime is: " + std::to_string(bestCombTime);
-  Log(logmessage,v_debug,verbosity); 
+  Log(logmessage,v_debug,verbosity);
   //Set the best Best total FOM results as the best vertex
   BestVertex->SetVertex(fSeedVertex->GetPosition(),bestCombTime);
   BestVertex->SetDirection(bestCombDirection);
   BestVertex->SetFOM(bestCombFOM,1,1);
+  if(verbosity>0){
+    std::cout<<" This position seed's position"<<std::endl;
+    std::cout<<"     (vx,vy,vz)=(" << BestVertex->GetPosition().X() << 
+        "," << BestVertex->GetPosition().Y() << "," << 
+        BestVertex->GetPosition().Z() << ") " << std::endl;
+  }
   return BestVertex;
 }
 

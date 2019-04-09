@@ -64,7 +64,8 @@ class VtxGridFitter: public Tool {
   int numFineSeeds; 
   double FineScaleReduction;
   
-  RecoVertex* BestExtendedVertex = nullptr;
+  RecoVertex* BestExtendedVertexPass1 = nullptr;
+  RecoVertex* BestExtendedVertexPass2 = nullptr;
   RecoVertex* scaledSeedPos = nullptr;
 
   /// Vertex Geometry shared by Fitter tools
