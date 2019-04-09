@@ -28,6 +28,16 @@ bool VtxGridFitter::Initialise(std::string configfile, DataModel &data){
   m_variables.Get("NumFineTimeSeeds", numFineSeeds);
   m_variables.Get("FineScalePosReduction", FineScaleReduction);
 
+
+  // Get vertex seed candidates from the store
+  auto get_seedlist = m_data->Stores.at("RecoEvent")->Get("vSeedVtxList", vSeedVtxList);
+  if(!get_seedlist){ 
+    Log("VtxGridFitter Tool: Error retrieving vertex seeds from RecoEvent!",v_error,verbosity);
+    Log("VtxGridFitter Tool: Needs to run VtxSeedGenerator first!",v_error,verbosity);
+    return false;
+  }
+ 
+
   return true;
 }
 
@@ -56,14 +66,6 @@ bool VtxGridFitter::Execute(){
     return false;
   }
     
-  // Get vertex seed candidates from the store
-  auto get_seedlist = m_data->Stores.at("RecoEvent")->Get("vSeedVtxList", vSeedVtxList);
-  if(!get_seedlist){ 
-    Log("VtxGridFitter Tool: Error retrieving vertex seeds from RecoEvent!",v_error,verbosity);
-    Log("VtxGridFitter Tool: Needs to run VtxSeedGenerator first!",v_error,verbosity);
-    return false;
-  }
- 
   // Load digits to VertexGeometry
   fVtxGeo = VertexGeometry::Instance();
   fVtxGeo->LoadDigits(fDigitList);
