@@ -34,6 +34,19 @@ bool VtxGridFitter::Initialise(std::string configfile, DataModel &data){
 
 bool VtxGridFitter::Execute(){
 
+  // check if event passes the cut
+  bool EventCutstatus = false;
+  auto get_evtstatus = m_data->Stores.at("RecoEvent")->Get("EventCutStatus",EventCutstatus);
+  if(!get_evtstatus) {
+    Log("VtxGridFitter Tool: tool could not find the Event selection status!", v_error, verbosity);
+    return false;	
+  }
+
+  if(!EventCutstatus) {
+  	Log("VtxGridFitter Tool: This event doesn't pass the event selection. ", v_message, verbosity);
+    return true;	
+  }
+
   // Retrive digits from RecoEvent
   auto get_ok = m_data->Stores.at("RecoEvent")->Get("RecoDigit",fDigitList);  ///> Get digits from "RecoEvent" 
   if(not get_ok){
@@ -72,7 +85,6 @@ bool VtxGridFitter::Execute(){
 
   // **** BEGIN SECOND FINE PASS OF REDUCED TANK GRID *****
   // Generate the fine time seeds
-  // TODO: Add these into the config
   Log("VtxGridFitter Tool: Second pass of grid fitting...",v_message,verbosity); 
   this->GenerateFineTimeSeeds(BestVtxCandidate->GetTime(), TimeResolution,
           numFineSeeds);
@@ -87,7 +99,12 @@ bool VtxGridFitter::Execute(){
             &vSeedFTimeList, &vSeedFineDirList, coneweight, vtxweight);
     if(BestVtxCandidate->GetFOM() > bestFOM) BestExtendedVertex = BestVtxCandidate;
   }
-  
+  if(verbosity >0) {
+  std::cout << "  set extended vertex: " << std::endl
+  	        << "  status = "<<BestExtendedVertex->GetStatus()<<std::endl
+            << "     (vx,vy,vz)=(" << BestExtendedVertex->GetPosition().X() << "," << BestExtendedVertex->GetPosition().Y() << "," << BestExtendedVertex->GetPosition().Z() << ") " << std::endl
+            << "     vtime=" << BestExtendedVertex->GetTime() << " itr=" << BestExtendedVertex->GetIterations() << " fom=" << BestExtendedVertex->GetFOM() << std::endl;
+  }
   // Push highest FOM vertex into the BoostStore
   this->PushExtendedVertex(BestExtendedVertex,true);
   this->Reset();
